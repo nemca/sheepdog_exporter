@@ -6,5 +6,5 @@ To run it:
 
 ```bash
 make
-./consul_exporter [flags]
+./sheepdog_exporter [flags]
 ```
