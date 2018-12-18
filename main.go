@@ -17,7 +17,147 @@ import (
 const (
 	namespase = "sheepdog"
 	exporter  = "sheepdog_exporter"
+	md        = "md_info"
+	ns        = "node_stat"
 )
+
+var (
+	mdInfoSize = prometheus.NewDesc(
+		prometheus.BuildFQName(namespase, md, "size"),
+		"Multi-disk total size in bytes by path.",
+		[]string{"path"}, nil,
+	)
+	mdInfoUse = prometheus.NewDesc(
+		prometheus.BuildFQName(namespase, md, "use"),
+		"Multi-disk usage in percentage by path.",
+		[]string{"path"}, nil,
+	)
+	mdInfoAvail = prometheus.NewDesc(
+		prometheus.BuildFQName(namespase, md, "avail"),
+		"Multi-disk available size in bytes by path.",
+		[]string{"path"}, nil,
+	)
+	mdInfoUsed = prometheus.NewDesc(
+		prometheus.BuildFQName(namespase, md, "used"),
+		"Multi-disk used size in bytes by path.",
+		[]string{"path"}, nil,
+	)
+	nodeStatActive = prometheus.NewDesc(
+		prometheus.BuildFQName(namespase, ns, "active"),
+		"Number of running requests by type.",
+		[]string{"type"}, nil,
+	)
+	nodeStatTotal = prometheus.NewDesc(
+		prometheus.BuildFQName(namespase, ns, "total"),
+		"Total numbers of requests received by type.",
+		[]string{"type"}, nil,
+	)
+	nodeStatWrite = prometheus.NewDesc(
+		prometheus.BuildFQName(namespase, ns, "write"),
+		"Number of write requests by type.",
+		[]string{"type"}, nil,
+	)
+	nodeStatRead = prometheus.NewDesc(
+		prometheus.BuildFQName(namespase, ns, "read"),
+		"Number of read requests by type.",
+		[]string{"type"}, nil,
+	)
+	nodeStatRemove = prometheus.NewDesc(
+		prometheus.BuildFQName(namespase, ns, "remove"),
+		"Number of remove requests by type.",
+		[]string{"type"}, nil,
+	)
+	nodeStatFlush = prometheus.NewDesc(
+		prometheus.BuildFQName(namespase, ns, "flush"),
+		"Number of flush requests by type.",
+		[]string{"type"}, nil,
+	)
+	nodeStatAllWrite = prometheus.NewDesc(
+		prometheus.BuildFQName(namespase, ns, "write_all"),
+		"Number of all write requests by type.",
+		[]string{"type"}, nil,
+	)
+	nodeStatAllRead = prometheus.NewDesc(
+		prometheus.BuildFQName(namespase, ns, "read_all"),
+		"Number of all read requests by type.",
+		[]string{"type"}, nil,
+	)
+)
+
+type dogCollector struct {
+	mdInfoUse        *prometheus.Desc
+	mdInfoSize       *prometheus.Desc
+	mdInfoAvail      *prometheus.Desc
+	mdInfoUsed       *prometheus.Desc
+	nodeStatActive   *prometheus.Desc
+	nodeStatTotal    *prometheus.Desc
+	nodeStatWrite    *prometheus.Desc
+	nodeStatRead     *prometheus.Desc
+	nodeStatRemove   *prometheus.Desc
+	nodeStatFlush    *prometheus.Desc
+	nodeStatAllWrite *prometheus.Desc
+	nodeStatAllRead  *prometheus.Desc
+}
+
+func newDogCollector() *dogCollector {
+	return &dogCollector{
+		mdInfoSize:       mdInfoSize,
+		mdInfoUse:        mdInfoUse,
+		mdInfoAvail:      mdInfoAvail,
+		mdInfoUsed:       mdInfoUsed,
+		nodeStatActive:   nodeStatActive,
+		nodeStatTotal:    nodeStatTotal,
+		nodeStatWrite:    nodeStatWrite,
+		nodeStatRead:     nodeStatRead,
+		nodeStatRemove:   nodeStatRemove,
+		nodeStatFlush:    nodeStatFlush,
+		nodeStatAllWrite: nodeStatAllWrite,
+		nodeStatAllRead:  nodeStatAllRead,
+	}
+}
+
+func (c *dogCollector) Describe(ch chan<- *prometheus.Desc) {
+	ch <- c.mdInfoUse
+	ch <- c.mdInfoSize
+	ch <- c.mdInfoAvail
+	ch <- c.mdInfoUsed
+	ch <- c.nodeStatActive
+	ch <- c.nodeStatTotal
+	ch <- c.nodeStatWrite
+	ch <- c.nodeStatRead
+	ch <- c.nodeStatRemove
+	ch <- c.nodeStatFlush
+	ch <- c.nodeStatAllWrite
+	ch <- c.nodeStatAllRead
+}
+
+func (c *dogCollector) Collect(ch chan<- prometheus.Metric) {
+	mds, err := getMdInfo()
+	if err != nil {
+		log.Error(err)
+	}
+	for _, md := range mds {
+		ch <- prometheus.MustNewConstMetric(c.mdInfoSize, prometheus.GaugeValue, float64(md.Size), md.Path)
+		ch <- prometheus.MustNewConstMetric(c.mdInfoUse, prometheus.GaugeValue, float64(md.Use), md.Path)
+		ch <- prometheus.MustNewConstMetric(c.mdInfoAvail, prometheus.GaugeValue, float64(md.Avail), md.Path)
+		ch <- prometheus.MustNewConstMetric(c.mdInfoUsed, prometheus.GaugeValue, float64(md.Used), md.Path)
+	}
+
+	ns, err := getNodeStat()
+	if err != nil {
+		log.Error(err)
+	}
+	for _, s := range ns {
+		ch <- prometheus.MustNewConstMetric(c.nodeStatActive, prometheus.GaugeValue, float64(s.Active), s.Type)
+		ch <- prometheus.MustNewConstMetric(c.nodeStatTotal, prometheus.GaugeValue, float64(s.Total), s.Type)
+		ch <- prometheus.MustNewConstMetric(c.nodeStatWrite, prometheus.GaugeValue, float64(s.Write), s.Type)
+		ch <- prometheus.MustNewConstMetric(c.nodeStatRead, prometheus.GaugeValue, float64(s.Read), s.Type)
+		ch <- prometheus.MustNewConstMetric(c.nodeStatRemove, prometheus.GaugeValue, float64(s.Remove), s.Type)
+		ch <- prometheus.MustNewConstMetric(c.nodeStatFlush, prometheus.GaugeValue, float64(s.Flush), s.Type)
+		ch <- prometheus.MustNewConstMetric(c.nodeStatAllWrite, prometheus.GaugeValue, float64(s.AllWrite), s.Type)
+		ch <- prometheus.MustNewConstMetric(c.nodeStatAllRead, prometheus.GaugeValue, float64(s.AllRead), s.Type)
+	}
+}
 
 func main() {
 	var (
@@ -35,6 +175,9 @@ func main() {
 
 	log.Infoln("Starting", exporter, version.Info())
 	log.Infoln("Build context", version.BuildContext())
+
+	dc := newDogCollector()
+	prometheus.MustRegister(dc)
 
 	if *sheepdogPidFile != "" {
 		procExporter := prometheus.NewProcessCollector(prometheus.ProcessCollectorOpts{
