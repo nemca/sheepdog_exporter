@@ -1,17 +1,16 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"os"
 	"strconv"
 	"strings"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/common/log"
 	"github.com/prometheus/common/version"
+	kingpin "gopkg.in/alecthomas/kingpin.v2"
 )
 
 const (
@@ -168,17 +167,14 @@ func (c *dogCollector) Collect(ch chan<- prometheus.Metric) {
 
 func main() {
 	var (
-		showVersion     = flag.Bool("version", false, "Print version information.")
-		listenAddress   = flag.String("web.listen-address", ":9525", "Address to listen on for web interface and telemetry.")
-		metricsPath     = flag.String("web.telemetry-path", "/metrics", "Path under which to expose metrics.")
-		sheepdogPidFile = flag.String("sheepdog.pid-file", "", "Path to Sheepdog's pid file to export process information.")
+		listenAddress   = kingpin.Flag("web.listen-address", "Address to listen on for web interface and telemetry.").Default(":9525").String()
+		metricsPath     = kingpin.Flag("web.telemetry-path", "Path under which to expose metrics.").Default("/metrics").String()
+		sheepdogPidFile = kingpin.Flag("sheepdog.pid-file", "Path to Sheepdog's pid file to export process information.").Default("").String()
 	)
-	flag.Parse()
-
-	if *showVersion {
-		fmt.Fprintln(os.Stdout, version.Print(exporter))
-		os.Exit(0)
-	}
+	log.AddFlags(kingpin.CommandLine)
+	kingpin.Version(version.Print("sheepdog_exporter"))
+	kingpin.HelpFlag.Short('h')
+	kingpin.Parse()
 
 	log.Infoln("Starting", exporter, version.Info())
 	log.Infoln("Build context", version.BuildContext())
