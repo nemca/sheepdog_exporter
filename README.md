@@ -2,11 +2,30 @@
 
 Export Sheepdog service health to Prometheus.
 
-To run it:
+#### Build
 
 ```bash
 make
 ./sheepdog_exporter [flags]
+```
+
+#### Usage
+
+```bash
+./sheepdog_exporter -h
+usage: sheepdog_exporter [<flags>]
+
+Flags:
+  -h, --help                  Show context-sensitive help (also try --help-long and --help-man).
+      --web.listen-address=":9525"
+                              Address to listen on for web interface and telemetry.
+      --web.telemetry-path="/metrics"
+                              Path under which to expose metrics.
+      --sheepdog.pid-file=""  Path to Sheepdog's pid file to export process information.
+      --log.level="info"      Only log messages with the given severity or above. Valid levels: [debug, info, warn, error, fatal]
+      --log.format="logger:stderr"
+                              Set the log target and format. Example: "logger:syslog?appname=bob&local=7" or "logger:stdout?json=true"
+      --version               Show application version.
 ```
 
 ## Exported Metrics
