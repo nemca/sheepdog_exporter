@@ -1,5 +1,6 @@
 GO    := GO15VENDOREXPERIMENT=1 go
 PROMU := $(GOPATH)/bin/promu
+GOLINT := $(GOPATH)/bin/golint
 GODEP_BIN := $(GOPATH)/bin/dep
 pkgs   = $(shell $(GO) list ./... | grep -v /vendor/)
 
@@ -18,7 +19,7 @@ vendor: $(GODEP) Gopkg.toml Gopkg.lock
 	@echo ">> No vendor dir found. Fetching dependencies now..."
 	GOPATH=$(GOPATH):. $(GODEP_BIN) ensure
 
-test:
+test: lint vet
 	@echo ">> running tests"
 	@$(GO) test -short $(pkgs)
 
@@ -33,6 +34,10 @@ format:
 vet:
 	@echo ">> vetting code"
 	@$(GO) vet $(pkgs)
+
+lint:
+	@echo ">> linting code"
+	@$(GOLINT) $(pkgs)
 
 build: promu
 	@echo ">> building binaries"
