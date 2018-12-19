@@ -4,14 +4,14 @@ Export Sheepdog service health to Prometheus.
 
 #### Build
 
-```bash
+```
 make
 ./sheepdog_exporter [flags]
 ```
 
 #### Usage
 
-```bash
+```
 ./sheepdog_exporter -h
 usage: sheepdog_exporter [<flags>]
 
