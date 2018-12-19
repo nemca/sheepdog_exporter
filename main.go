@@ -84,6 +84,8 @@ var (
 	)
 )
 
+// dogCollector collects Sheepdog stats and exports them using
+// the prometheus metrics package.
 type dogCollector struct {
 	mdInfoUse        *prometheus.Desc
 	mdInfoSize       *prometheus.Desc
@@ -99,6 +101,7 @@ type dogCollector struct {
 	nodeStatAllRead  *prometheus.Desc
 }
 
+// newDogCollector implements dogCollector
 func newDogCollector() *dogCollector {
 	return &dogCollector{
 		mdInfoSize:       mdInfoSize,
@@ -116,6 +119,8 @@ func newDogCollector() *dogCollector {
 	}
 }
 
+// Describe describes all the metrics ever exported by the Sheepdog exporter. It
+// implements prometheus.Collector.
 func (c *dogCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- c.mdInfoUse
 	ch <- c.mdInfoSize
@@ -131,6 +136,8 @@ func (c *dogCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- c.nodeStatAllRead
 }
 
+// Collect fetches the stats from Sheepdog and delivers them
+// as Prometheus metrics. It implements prometheus.Collector.
 func (c *dogCollector) Collect(ch chan<- prometheus.Metric) {
 	mds, err := getMdInfo()
 	if err != nil {
@@ -181,7 +188,7 @@ func main() {
 
 	if *sheepdogPidFile != "" {
 		procExporter := prometheus.NewProcessCollector(prometheus.ProcessCollectorOpts{
-			func() (int, error) {
+			PidFn: func() (int, error) {
 				content, err := ioutil.ReadFile(*sheepdogPidFile)
 				if err != nil {
 					return 0, fmt.Errorf("Can't read pid file: %s", err)
@@ -191,7 +198,10 @@ func main() {
 					return 0, fmt.Errorf("Can't parse pid file: %s", err)
 				}
 				return value, nil
-			}, namespase, false})
+			},
+			Namespace:    namespase,
+			ReportErrors: false,
+		})
 		prometheus.MustRegister(procExporter)
 	}
 
