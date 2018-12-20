@@ -155,13 +155,13 @@ func (c *dogCollector) Collect(ch chan<- prometheus.Metric) {
 	}
 	for _, s := range ns {
 		ch <- prometheus.MustNewConstMetric(c.nodeStatActive, prometheus.GaugeValue, float64(s.Active), s.Type)
-		ch <- prometheus.MustNewConstMetric(c.nodeStatTotal, prometheus.GaugeValue, float64(s.Total), s.Type)
-		ch <- prometheus.MustNewConstMetric(c.nodeStatWrite, prometheus.GaugeValue, float64(s.Write), s.Type)
-		ch <- prometheus.MustNewConstMetric(c.nodeStatRead, prometheus.GaugeValue, float64(s.Read), s.Type)
-		ch <- prometheus.MustNewConstMetric(c.nodeStatRemove, prometheus.GaugeValue, float64(s.Remove), s.Type)
-		ch <- prometheus.MustNewConstMetric(c.nodeStatFlush, prometheus.GaugeValue, float64(s.Flush), s.Type)
-		ch <- prometheus.MustNewConstMetric(c.nodeStatAllWrite, prometheus.GaugeValue, float64(s.AllWrite), s.Type)
-		ch <- prometheus.MustNewConstMetric(c.nodeStatAllRead, prometheus.GaugeValue, float64(s.AllRead), s.Type)
+		ch <- prometheus.MustNewConstMetric(c.nodeStatTotal, prometheus.CounterValue, float64(s.Total), s.Type)
+		ch <- prometheus.MustNewConstMetric(c.nodeStatWrite, prometheus.CounterValue, float64(s.Write), s.Type)
+		ch <- prometheus.MustNewConstMetric(c.nodeStatRead, prometheus.CounterValue, float64(s.Read), s.Type)
+		ch <- prometheus.MustNewConstMetric(c.nodeStatRemove, prometheus.CounterValue, float64(s.Remove), s.Type)
+		ch <- prometheus.MustNewConstMetric(c.nodeStatFlush, prometheus.CounterValue, float64(s.Flush), s.Type)
+		ch <- prometheus.MustNewConstMetric(c.nodeStatAllWrite, prometheus.CounterValue, float64(s.AllWrite), s.Type)
+		ch <- prometheus.MustNewConstMetric(c.nodeStatAllRead, prometheus.CounterValue, float64(s.AllRead), s.Type)
 	}
 }
 
