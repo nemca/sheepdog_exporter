@@ -31,6 +31,7 @@ Flags:
 ## Exported Metrics
 | Metric | Description | Type | Labels |
 | ------ | ----------- | ---- | ------ |
+| sheepdog_up | Was the last query of Sheepdog successful | gauge | |
 | sheepdog_md_info_avail | Multi-disk available size in bytes | gauge | path |
 | sheepdog_md_info_size | Multi-disk total size in bytes | gauge | path |
 | sheepdog_md_info_use | Multi-disk usage in percentage | gauge | path |

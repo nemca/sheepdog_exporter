@@ -14,70 +14,75 @@ import (
 )
 
 const (
-	namespase = "sheepdog"
+	namespace = "sheepdog"
 	exporter  = "sheepdog_exporter"
 	md        = "md_info"
 	ns        = "node_stat"
 )
 
 var (
+	up = prometheus.NewDesc(
+		prometheus.BuildFQName(namespace, "", "up"),
+		"Was the last query of Sheepdog successful.",
+		nil, nil,
+	)
 	mdInfoSize = prometheus.NewDesc(
-		prometheus.BuildFQName(namespase, md, "size"),
+		prometheus.BuildFQName(namespace, md, "size"),
 		"Multi-disk total size in bytes by path.",
 		[]string{"path"}, nil,
 	)
 	mdInfoUse = prometheus.NewDesc(
-		prometheus.BuildFQName(namespase, md, "use"),
+		prometheus.BuildFQName(namespace, md, "use"),
 		"Multi-disk usage in percentage by path.",
 		[]string{"path"}, nil,
 	)
 	mdInfoAvail = prometheus.NewDesc(
-		prometheus.BuildFQName(namespase, md, "avail"),
+		prometheus.BuildFQName(namespace, md, "avail"),
 		"Multi-disk available size in bytes by path.",
 		[]string{"path"}, nil,
 	)
 	mdInfoUsed = prometheus.NewDesc(
-		prometheus.BuildFQName(namespase, md, "used"),
+		prometheus.BuildFQName(namespace, md, "used"),
 		"Multi-disk used size in bytes by path.",
 		[]string{"path"}, nil,
 	)
 	nodeStatActive = prometheus.NewDesc(
-		prometheus.BuildFQName(namespase, ns, "active"),
+		prometheus.BuildFQName(namespace, ns, "active"),
 		"Number of running requests by type.",
 		[]string{"type"}, nil,
 	)
 	nodeStatTotal = prometheus.NewDesc(
-		prometheus.BuildFQName(namespase, ns, "total"),
+		prometheus.BuildFQName(namespace, ns, "total"),
 		"Total numbers of requests received by type.",
 		[]string{"type"}, nil,
 	)
 	nodeStatWrite = prometheus.NewDesc(
-		prometheus.BuildFQName(namespase, ns, "write"),
+		prometheus.BuildFQName(namespace, ns, "write"),
 		"Number of write requests by type.",
 		[]string{"type"}, nil,
 	)
 	nodeStatRead = prometheus.NewDesc(
-		prometheus.BuildFQName(namespase, ns, "read"),
+		prometheus.BuildFQName(namespace, ns, "read"),
 		"Number of read requests by type.",
 		[]string{"type"}, nil,
 	)
 	nodeStatRemove = prometheus.NewDesc(
-		prometheus.BuildFQName(namespase, ns, "remove"),
+		prometheus.BuildFQName(namespace, ns, "remove"),
 		"Number of remove requests by type.",
 		[]string{"type"}, nil,
 	)
 	nodeStatFlush = prometheus.NewDesc(
-		prometheus.BuildFQName(namespase, ns, "flush"),
+		prometheus.BuildFQName(namespace, ns, "flush"),
 		"Number of flush requests by type.",
 		[]string{"type"}, nil,
 	)
 	nodeStatAllWrite = prometheus.NewDesc(
-		prometheus.BuildFQName(namespase, ns, "write_all"),
+		prometheus.BuildFQName(namespace, ns, "write_all"),
 		"Number of all write requests by type.",
 		[]string{"type"}, nil,
 	)
 	nodeStatAllRead = prometheus.NewDesc(
-		prometheus.BuildFQName(namespase, ns, "read_all"),
+		prometheus.BuildFQName(namespace, ns, "read_all"),
 		"Number of all read requests by type.",
 		[]string{"type"}, nil,
 	)
@@ -86,6 +91,7 @@ var (
 // dogCollector collects Sheepdog stats and exports them using
 // the prometheus metrics package.
 type dogCollector struct {
+	up               *prometheus.Desc
 	mdInfoUse        *prometheus.Desc
 	mdInfoSize       *prometheus.Desc
 	mdInfoAvail      *prometheus.Desc
@@ -103,6 +109,7 @@ type dogCollector struct {
 // newDogCollector implements dogCollector
 func newDogCollector() *dogCollector {
 	return &dogCollector{
+		up:               up,
 		mdInfoSize:       mdInfoSize,
 		mdInfoUse:        mdInfoUse,
 		mdInfoAvail:      mdInfoAvail,
@@ -121,6 +128,7 @@ func newDogCollector() *dogCollector {
 // Describe describes all the metrics ever exported by the Sheepdog exporter. It
 // implements prometheus.Collector.
 func (c *dogCollector) Describe(ch chan<- *prometheus.Desc) {
+	ch <- c.up
 	ch <- c.mdInfoUse
 	ch <- c.mdInfoSize
 	ch <- c.mdInfoAvail
@@ -140,8 +148,10 @@ func (c *dogCollector) Describe(ch chan<- *prometheus.Desc) {
 func (c *dogCollector) Collect(ch chan<- prometheus.Metric) {
 	mds, err := getMdInfo()
 	if err != nil {
+		ch <- prometheus.MustNewConstMetric(c.up, prometheus.GaugeValue, 0)
 		log.Error(err)
 	}
+	ch <- prometheus.MustNewConstMetric(c.up, prometheus.GaugeValue, 1)
 	for _, md := range mds {
 		ch <- prometheus.MustNewConstMetric(c.mdInfoSize, prometheus.GaugeValue, float64(md.Size), md.Path)
 		ch <- prometheus.MustNewConstMetric(c.mdInfoUse, prometheus.GaugeValue, float64(md.Use), md.Path)
@@ -195,7 +205,7 @@ func main() {
 				}
 				return value, nil
 			},
-			Namespace:    namespase,
+			Namespace:    namespace,
 			ReportErrors: false,
 		})
 		prometheus.MustRegister(procExporter)
